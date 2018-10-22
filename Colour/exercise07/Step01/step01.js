@@ -1,52 +1,101 @@
 'use strict';
 
-var tileCountX = 50;        //variables setting the amount of rects/tiles
-var tileCountY = 10;
-
-var hueValues = [];         //3 arrays initialised
+var colorCount = 20;
+var hueValues = [];
 var saturationValues = [];
 var brightnessValues = [];
+var actRandomSeed = 0;
 
 function setup() {
-  createCanvas(800, 800);   //canvas setup along with colormode and nostroke enabled
+  createCanvas(windowWidth, windowHeight);
   colorMode(HSB, 360, 100, 100, 100);
   noStroke();
-
-  // init with random values
-  for (var i = 0; i < tileCountX; i++) {    //A for loop used to populate the arrays with random numbers
-    hueValues[i] = random(360);             //These numbers will be used to create random colours
-    saturationValues[i] = random(100);
-    brightnessValues[i] = random(100);
-  }
 }
 
 function draw() {
-  // white back
-  background(0, 0, 100);                //setting the background colour
+  noLoop();
+  randomSeed(actRandomSeed);
 
-  // limit mouse coordinates to canvas
-  var mX = constrain(500, 0, width);    //restrains the mouse x and y within a select range within the canvas
-  var mY = constrain(500, 0, height);
+  // ------ colors ------
+  // create palette
+  for (var i = 0; i < colorCount; i++) {
+    if (i % 2 == 0) {
+      hueValues[i] = random(130, 220);
+      saturationValues[i] = 100;
+      brightnessValues[i] = random(15, 100);
+    } else {
+      hueValues[i] = 195;
+      saturationValues[i] = random(20, 100);
+      brightnessValues[i] = 100;
+    }
+  }
 
-  // tile counter
-  var counter = 0;                      //a counter used to keep track
+  // ------ area tiling ------
+  // count tiles
+  var counter = 0;
+  // row count and row height
+  var rowCount = int(random(5, 30));
+  var rowHeight = height / rowCount;
 
-  // map mouse to grid resolution
-  var currentTileCountX = int(map(mX, 0, width, 1, tileCountX));      //mapping the mouseX+Y to 0 - width and height of the canvas and the tile count
-  var currentTileCountY = int(map(mY, 0, height, 1, tileCountY));     //storing that result in a variable, currentTileCountX
-  var tileWidth = width / currentTileCountX;                          //now with the currentTileCountX you can find the tileWidth and height
-  var tileHeight = height / currentTileCountY;
+  // seperate each line in parts
+  for (var i = rowCount; i >= 0; i--) {
+    // how many fragments
+    var partCount = i + 1;
+    var parts = [];
 
-  for (var gridY = 0; gridY < tileCountY; gridY++) {                  //nested for loop to create and populate the canvas with rects
-    for (var gridX = 0; gridX < tileCountX; gridX++) {
-      var posX = tileWidth * gridX;
-      var posY = tileHeight * gridY;
-      var index = counter % currentTileCountX;                        //used to allocate a colour to a specific tile 
+    for (var ii = 0; ii < partCount; ii++) {
+      // sub fragments or not?
+      if (random() < 0.075) {
+        // take care of big values
+        var fragments = int(random(2, 20));
+        partCount = partCount + fragments;
+        for (var iii = 0; iii < fragments; iii++) {
+          parts.push(random(2));
+        }
+      } else {
+        parts.push(random(2, 20));
+      }
+    }
 
-      // get component color values
-      fill(hueValues[index], saturationValues[index], brightnessValues[index]); // fills the tiles with a colour created from three arrays
-      rect(posX, posY, tileWidth, tileHeight);
+    // add all subparts
+    var sumPartsTotal = 0;
+    for (var ii = 0; ii < partCount; ii++) {
+      sumPartsTotal += parts[ii];
+    }
+
+    // draw rects
+    var sumPartsNow = 0;
+    for (var ii = 0; ii < parts.length; ii++) {
+      sumPartsNow += parts[ii];
+
+      var x = map(sumPartsNow, 0, sumPartsTotal, 0, width);
+      var y = rowHeight * i;
+      var w = -map(parts[ii], 0, sumPartsTotal, 0, width);
+      var h = rowHeight;
+
+      var index = counter % colorCount;
+      var col = color(hueValues[index], saturationValues[index], brightnessValues[index]);
+      fill(col);
+      rect(x, y, w, h);
+
       counter++;
     }
+  }
+}
+
+function mouseReleased() {
+  actRandomSeed = random(100000);
+  loop();
+}
+
+function keyPressed() {
+  if (key == 's' || key == 'S') saveCanvas(gd.timestamp(), 'png');
+  if (key == 'c' || key == 'C') {
+    // -- save an ase file (adobe swatch export) --
+    var colors = [];
+    for (var i = 0; i < hueValues.length; i++) {
+      colors.push(color(hueValues[i], saturationValues[i], brightnessValues[i]));
+    }
+    writeFile([gd.ase.encode(colors)], gd.timestamp(), 'ase');
   }
 }
