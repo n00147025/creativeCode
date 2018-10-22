@@ -70,7 +70,7 @@ function draw() {
 
       var x = map(sumPartsNow, 0, sumPartsTotal, 0, width);
       var y = rowHeight * i;
-      var w = -map(parts[ii], 0, sumPartsTotal, 0, width);
+      var w = -map(parts[ii], 0, sumPartsTotal, 0, width);      //-negative map
       var h = rowHeight;
 
       var index = counter % colorCount;
